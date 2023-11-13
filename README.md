@@ -181,4 +181,12 @@ registry and the channel of the running user will be overridden to point to the
 > In a different implementation, we would just use an activation script to
 > achieve this the same way as NixOS and home-manager, however, that conflicts
 > with the goals of this project.
+>
+> If it is useful to fixing a system, the things changed are in `~/.config/nix/registry.json`
+> (`/etc/nix/registry.json` if run as root), and linked to from
+> `~/.nix-defexpr/`. Channels can be rolled back with
+> `nix-env --profile $(readlink ~/.nix-defexpr/channels) --rollback`
+> or for root, `sudo nix-env --profile $(readlink ~/.nix-defexpr/channels_root) --rollback`.
+> The former, not much can be done about, and it's probably easiest to just
+> delete the `registry.json` if it's broken.
 
