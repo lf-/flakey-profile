@@ -10,6 +10,7 @@
         lib = import ./lib;
         templates = import ./lib/mkTemplates.nix [
           ./templates/default
+          ./templates/no-flake
         ];
       };
 
