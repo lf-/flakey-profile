@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Jade Lovelace
+#
+# SPDX-License-Identifier: CC0-1.0
+
 let
   sources = {
     # If you want to update these manually, update the commit ID then set sha256
@@ -72,6 +76,7 @@ in
     # Build, without switching:
     #   nix build -f . profile
     inherit pkgs;
+    pinned = { inherit (sources) nixpkgs; };
     paths = with pkgs; [
       hello
     ];

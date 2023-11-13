@@ -54,6 +54,10 @@ nix flake init -t github:lf-/flakey-profile#templates.default
 Flake example:
 
 ```nix
+# SPDX-FileCopyrightText: 2023 Jade Lovelace
+#
+# SPDX-License-Identifier: CC0-1.0
+
 {
   description = "Basic usage of flakey-profile";
 
@@ -76,12 +80,18 @@ Flake example:
         # Usage:
         # Switch to this flake:
         #   nix run .#profile.switch
-        # Revert a profile change:
+        # Revert a profile change (note: does not revert pins):
         #   nix run .#profile.rollback
         # Build, without switching:
         #   nix build .#profile
+        # Pin nixpkgs in the flake registry and in NIX_PATH, so that
+        # `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` will
+        # resolve to the same hello as below:
+        #   nix run .#profile.pin
         packages.profile = flakey-profile.lib.mkProfile {
           inherit pkgs;
+          # Specifies things to pin in the flake registry and in NIX_PATH.
+          pinned = { nixpkgs = toString nixpkgs; };
           paths = with pkgs; [
             hello
           ];
@@ -99,6 +109,10 @@ nix run .#profile.switch
 ```
 
 ### Revert a profile change
+
+> **Warning**: This does not rollback the actions of `profile.pin`. To roll
+> that back, revert to the previous version of the profile using a version
+> control system and run `profile.pin` again.
 
 ```
 nix run .#profile.rollback
@@ -127,3 +141,44 @@ then
 ```
 nix run .#profile.switch
 ```
+
+### Pin nixpkgs in the [flake registry] and in [`NIX_PATH`][nix_path_proc]
+
+This makes `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` give
+you the same `hello` as if you listed it in your profile.
+
+We recommend only running this command as root, since by default the only
+channels used are on root's profile, and are used for `nix upgrade-nix` among
+other things.
+
+> **Warning**: This does not support revert internally; see below for more
+> details. To revert pinning, use source control to get the previous version of
+> the profile and run the pinning operation again.
+
+```
+nix run .#profile.pin
+```
+
+#### Context
+
+The [flake registry] is used to resolve unqualified flake names such as
+`nixpkgs` in `nix run nixpkgs#hello`, and can be overridden on a per-user or
+system-wide basis. `NIX_PATH` is used to resolve `<nixpkgs>` and other
+references in angle brackets, and if not present, [this
+procedure][nix_path_proc] is used. By running `profile.pin`, both the flake
+registry and the channel of the running user will be overridden to point to the
+`nixpkgs` you used to build your profile.
+
+[flake registry]: https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-registry.html#registry-format
+[nix_path_proc]: https://nixos.org/manual/nix/stable/command-ref/env-common.html#env-NIX_PATH
+
+> **Note**: We don't provide an easy way of rolling back a pin, since the Nix
+> flake registry is not managed with profiles and the semantics of keeping
+> everything in sync when reverting don't really work out. We suggest rolling
+> back pins by reverting to the previous version in your preferred version
+> control system, then rerunning `pin`.
+>
+> In a different implementation, we would just use an activation script to
+> achieve this the same way as NixOS and home-manager, however, that conflicts
+> with the goals of this project.
+

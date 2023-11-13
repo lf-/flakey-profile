@@ -7,9 +7,20 @@
 # The following attributes are available:
 # - .switch: switches to the profile
 # - .rollback: rolls back to the previous version of the profile
-args @ { pkgs, name ? "flake-profile", ... }:
+args @ {
+  # nixpkgs to use
+  pkgs
+, # Name of the profile, which appears in the Nix store path of the result
+  name ? "flake-profile"
+, # Items to pin in the flake registry and NIX_PATH, such that they're seen by
+  # `nix run nixpkgs#hello` and `nix-shell -p hello --run hello`.
+  pinned ? { }
+, ...
+}:
 let
-  args' = builtins.removeAttrs args [ "pkgs" ];
+  args' = builtins.removeAttrs args [ "pkgs" "pinned" ];
+  pins = import ./pin.nix { inherit pkgs pinned; };
+
   env = pkgs.buildEnv (args' // {
     inherit name;
   });
@@ -20,5 +31,23 @@ env // {
   '';
   rollback = pkgs.writeShellScriptBin "rollback" ''
     nix-env --rollback "$@"
+  '';
+
+  # pass through pins, so you can e.g. nix build .#profile.pins.channels
+  inherit pins;
+  # This script pins any of the items in "pinned" in both the flake registry
+  # and the nix channels, such that `nix run nixpkgs#hello` and
+  # `nix-shell -p hello --run hello` will hit the same nixpkgs as is used in
+  # the declarative profile.
+  #
+  # It is not really possible to cleanly roll this back in terms of the flake
+  # registry, so we suggest just reverting with git in that case.
+  pin = pkgs.writeShellScriptBin "pin" ''
+    if [[ $UID == 0 ]]; then
+      ${pins.pinFlakes { isRoot = true; }}
+    else
+      ${pins.pinFlakes { isRoot = false; }}
+    fi
+    nix-env --profile /nix/var/nix/profiles/per-user/$USER/channels --set ${pins.channels}
   '';
 }

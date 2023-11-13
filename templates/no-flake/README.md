@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 Jade Lovelace
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # flakey-profile, without flakes?!
 
 Who needs flakes anyway! You just need a nixpkgs and a way of running stuff
@@ -25,6 +31,10 @@ nix run -f . profile.switch
 ```
 ### To revert a profile change:
 
+> **Warning**: This does not rollback the actions of `profile.pin`. To roll
+> that back, revert to the previous version of the profile using a version
+> control system and run `profile.pin` again.
+
 ```
 nix run -f . profile.rollback
 ```
@@ -33,6 +43,23 @@ nix run -f . profile.rollback
 
 ```
 nix build -f . profile
+```
+
+### To pin nixpkgs in `NIX_PATH` and the flake registry:
+
+This makes `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` give
+you the same `hello` as if you listed it in your profile.
+
+We recommend only running this command as root, since by default the only
+channels used are on root's profile, and are used for `nix upgrade-nix` among
+other things.
+
+> **Warning**: This does not support revert internally; see the main README for
+> more details. To revert pinning, use source control to get the previous
+> version of the profile and run the pinning operation again.
+
+```
+nix run -f . profile.pin
 ```
 
 ### To manage your version of nixpkgs
@@ -47,10 +74,8 @@ examples are given:
 
 [gridlock]: https://github.com/lf-/gridlock
 
-Note that, like with the flakes version, this doesn't set the global nixpkgs
-(acquired by searching `NIX_PATH`) to anything in particular, so `nix-shell -p`
-will not pick up your nixpkgs version. We can *definitely* fix this very
-easily, and probably will add something.
+We support pinning `nixpkgs` system-wide on the basis of the version specified
+here using `sudo nix run -f . profile.pin`.
 
 ## Note: the old CLI
 
