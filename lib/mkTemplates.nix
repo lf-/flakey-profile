@@ -6,14 +6,14 @@ templates:
 builtins.listToAttrs (
   builtins.map
     (template:
-    let flake = import (template + "/flake.nix");
+    let flakePath = template + "/flake.nix";
     in
     {
       name = builtins.baseNameOf template;
       value =
         {
           path = template;
-          inherit (flake) description;
+          description = if builtins.pathExists flakePath then (import flakePath).description else "(no flake file)";
         };
     })
     templates)
