@@ -15,10 +15,12 @@ args @ {
 , # Items to pin in the flake registry and NIX_PATH, such that they're seen by
   # `nix run nixpkgs#hello` and `nix-shell -p hello --run hello`.
   pinned ? { }
+, # Extra arguments given when switching profiles (n.b. not shell escaped).
+  extraSwitchArgs ? [ ]
 , ...
 }:
 let
-  args' = builtins.removeAttrs args [ "pkgs" "pinned" ];
+  args' = builtins.removeAttrs args [ "pkgs" "pinned" "extraSwitchArgs" ];
   pins = import ./pin.nix { inherit pkgs pinned; };
 
   env = pkgs.buildEnv (args' // {
@@ -27,10 +29,10 @@ let
 in
 env // {
   switch = pkgs.writeShellScriptBin "switch" ''
-    nix-env --set ${env} "$@"
+    nix-env --set ${env} ${toString extraSwitchArgs} "$@"
   '';
   rollback = pkgs.writeShellScriptBin "rollback" ''
-    nix-env --rollback "$@"
+    nix-env --rollback ${toString extraSwitchArgs} "$@"
   '';
 
   # pass through pins, so you can e.g. nix build .#profile.pins.channels
