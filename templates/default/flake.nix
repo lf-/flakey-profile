@@ -30,8 +30,8 @@
         #   nix build .#profile
         # Pin nixpkgs in the flake registry and in NIX_PATH, so that
         # `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` will
-        # resolve to the same hello as below:
-        #   nix run .#profile.pin
+        # resolve to the same hello as below [should probably be run as root, see README caveats]:
+        #   sudo nix run .#profile.pin
         packages.profile = flakey-profile.lib.mkProfile {
           inherit pkgs;
           # Specifies things to pin in the flake registry and in NIX_PATH.

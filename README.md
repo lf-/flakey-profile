@@ -86,8 +86,8 @@ Flake example:
         #   nix build .#profile
         # Pin nixpkgs in the flake registry and in NIX_PATH, so that
         # `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` will
-        # resolve to the same hello as below:
-        #   nix run .#profile.pin
+        # resolve to the same hello as below [should probably be run as root, see README caveats]:
+        #   sudo nix run .#profile.pin
         packages.profile = flakey-profile.lib.mkProfile {
           inherit pkgs;
           # Specifies things to pin in the flake registry and in NIX_PATH.
@@ -147,11 +147,13 @@ nix run .#profile.switch
 This makes `nix run nixpkgs#hello` and `nix-shell -p hello --run hello` give
 you the same `hello` as if you listed it in your profile.
 
-We recommend only running this command as root, since by default the only
-channels used are on root's profile, and are used for `nix upgrade-nix` among
-other things.
+> [!IMPORTANT]
+> We recommend only running this command as root, since by default the only
+> channels used are on root's profile, and are used for `nix upgrade-nix` and
+> other uses of nix as root.
 
-> **Warning**: This does not support revert internally; see below for more
+> [!WARNING]
+> This does not support revert internally; see below for more
 > details. To revert pinning, use source control to get the previous version of
 > the profile and run the pinning operation again.
 
@@ -172,7 +174,8 @@ registry and the channel of the running user will be overridden to point to the
 [flake registry]: https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-registry.html#registry-format
 [nix_path_proc]: https://nixos.org/manual/nix/stable/command-ref/env-common.html#env-NIX_PATH
 
-> **Note**: We don't provide an easy way of rolling back a pin, since the Nix
+> [!NOTE]
+> We don't provide an easy way of rolling back a pin, since the Nix
 > flake registry is not managed with profiles and the semantics of keeping
 > everything in sync when reverting don't really work out. We suggest rolling
 > back pins by reverting to the previous version in your preferred version
@@ -190,3 +193,14 @@ registry and the channel of the running user will be overridden to point to the
 > The former, not much can be done about, and it's probably easiest to just
 > delete the `registry.json` if it's broken.
 
+
+## Common problems
+
+It seems that often people run into an issue where
+`/nix/var/nix/profiles/per-user/$USER` does not exist. If this is the case, you
+can simply `sudo mkdir -p /nix/var/nix/profiles/per-user/$USER && sudo chown
+$USER /nix/var/nix/profiles/per-user/$USER`. Or, alternatively, `nix-env -f
+'<nixpkgs>' -iA hello` might fix it, but if it does not, try the other one.
+
+This has so far been observed on macOS, however we are unsure if this is a Mac
+only bug.
